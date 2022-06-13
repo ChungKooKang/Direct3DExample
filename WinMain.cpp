@@ -8,8 +8,8 @@
 
 const wchar_t gClassName[]{ L"MyWindowClass" };
 const wchar_t gTitle[]{ L"Direct3D" };
-const int WINDOW_WIDTH{ 800 };
-const int WINDOW_HEIGHT{ 600 };
+int gScreenWidth{ 800 };
+int gScreenHeight{ 600 };
 
 Microsoft::WRL::ComPtr<ID3D11Device>             gspDevice;
 Microsoft::WRL::ComPtr<ID3D11DeviceContext>      gspDeviceContext{};
@@ -26,6 +26,7 @@ HINSTANCE gInstance{};
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 void InitD3D();
+void OnResize();
 void DestroyD3D();
 void Render();
 
@@ -56,7 +57,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
         return 0;
     }
 
-    RECT wr{ 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
+    RECT wr{ 0, 0, gScreenWidth, gScreenHeight };
     AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
     gHwnd = CreateWindowEx(NULL,
@@ -139,10 +140,13 @@ void InitD3D()
     ZeroMemory(&scd, sizeof(DXGI_SWAP_CHAIN_DESC));
     scd.BufferCount = 1;                                    // BackBuffer의 갯수
     scd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;     // PixelFormat
+    scd.BufferDesc.Width = gScreenWidth;
+    scd.BufferDesc.Height = gScreenHeight;
     scd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;      // BackBuffer는 RenderTarget으로 지정할 목적
     scd.OutputWindow = gHwnd;                               // 그림을 그릴 윈도우
     scd.SampleDesc.Count = 1;                               // 1xMSAA - anti aliasing 안함.
     scd.Windowed = TRUE;                                    // 창모드
+    scd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
     
     D3D11CreateDeviceAndSwapChain(
@@ -160,16 +164,76 @@ void InitD3D()
         gspDeviceContext.ReleaseAndGetAddressOf() // 생성된 DeviceContext 인터페이스
     );
 
+    OnResize();
+
+}
+void OnResize()
+{
+    //SwapChain 크기 변경
+    ID3D11RenderTargetView* nullView[] = { nullptr };
+    gspDeviceContext->OMSetRenderTargets(_countof(nullView), nullView, nullptr);
+
+    gspRenderTargetView.Reset();
+    gspDepthStencilView.Reset();
+    gspRenderTarget.Reset();
+    gspDepthStencil.Reset();
+
+    gspDeviceContext->Flush();
+    gspSwapChain->ResizeBuffers(
+        0,
+        gScreenWidth,
+        gScreenHeight,
+        DXGI_FORMAT_UNKNOWN,
+        0
+    );
+
+
     // 스웹체인(Front, Back) <- Back에 그릴 예정 <- RenderTarget을 Backbuffer로 지정
     gspSwapChain->GetBuffer(0, IID_PPV_ARGS(gspRenderTarget.ReleaseAndGetAddressOf()));
 
     // resource -> resource view로 연결
     gspDevice->CreateRenderTargetView(gspRenderTarget.Get(), nullptr, gspRenderTargetView.GetAddressOf());
-    
+
+    //Depth-Stencil Buffer
+    CD3D11_TEXTURE2D_DESC t2d(
+        DXGI_FORMAT_D24_UNORM_S8_UINT,
+        gScreenWidth,
+        gScreenHeight,
+        1,
+        1, // 0을 주면 기본값이 되어서 다 만들어 진다. 주의하자
+        D3D11_BIND_DEPTH_STENCIL
+    );
+
+
+    gspDevice->CreateTexture2D(&t2d, nullptr, gspDepthStencil.ReleaseAndGetAddressOf());
+
+    CD3D11_DEPTH_STENCIL_VIEW_DESC dsvd(D3D11_DSV_DIMENSION_TEXTURE2D);
+    gspDevice->CreateDepthStencilView(
+        gspDepthStencil.Get(),
+        &dsvd,
+        gspDepthStencilView.ReleaseAndGetAddressOf()
+    );
+
+    // Output Merger 연결하기
+    gspDeviceContext->OMSetRenderTargets(1, gspRenderTargetView.GetAddressOf(), gspDepthStencilView.Get());
+
+    // Viewport (보여질 영역)
+    CD3D11_VIEWPORT viewport(
+        0.0f, 0.0f,
+        static_cast<float>(gScreenWidth),
+        static_cast<float>(gScreenHeight)
+    );
+    gspDeviceContext->RSSetViewports(1, &viewport);
 }
 
 void DestroyD3D()
 {
+    gspSwapChain->SetFullscreenState(FALSE, nullptr);
+
+    gspDepthStencilView.Reset();
+    gspDepthStencil.Reset();
+    gspRenderTargetView.Reset();
+    gspRenderTarget.Reset();
     gspSwapChain.Reset();
     gspDeviceContext.Reset();
     gspDevice.Reset();
