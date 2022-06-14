@@ -22,6 +22,9 @@ Microsoft::WRL::ComPtr<ID3D11DepthStencilView>   gspDepthStencilView{};
 
 HWND gHwnd{};
 HINSTANCE gInstance{};
+bool gMinimized{ false };
+bool gMaximized{ false };
+bool gResizing{ false };
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -46,7 +49,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
     wc.lpszClassName = gClassName;
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+    wc.hbrBackground = 0;
     wc.lpfnWndProc = WindowProc;
     wc.cbSize = sizeof(WNDCLASSEX);
 
@@ -79,7 +82,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
             MB_ICONEXCLAMATION | MB_OK);
         return 0;
     }
-    //TODO : 처음 처리
+
     ShowWindow(gHwnd, nShowCmd);
     SetForegroundWindow(gHwnd);
     SetFocus(gHwnd);
@@ -118,16 +121,98 @@ LRESULT CALLBACK WindowProc(
 {
     switch (message)
     {
-    case WM_CLOSE:
-        DestroyWindow(hWnd);
+    case WM_PAINT :
+        if (gResizing)
+        {
+            Render();
+        }
+        else
+        {
+            PAINTSTRUCT ps;
+            BeginPaint(hWnd, &ps);
+            EndPaint(hWnd, &ps);
+        }
         break;
 
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
+        case WM_ENTERSIZEMOVE :
+            gResizing = true;
+            return 0;
+            break;
 
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        case WM_SIZE :
+            gScreenWidth = LOWORD(lParam);
+            gScreenHeight = HIWORD(lParam);
+
+            if (gspDevice)
+            {
+                if (wParam == SIZE_MINIMIZED)
+                {
+                    gMinimized = true;
+                    gMaximized = false;
+                }
+                else if (wParam == SIZE_MAXIMIZED)
+                {
+                    gMinimized = false;
+                    gMaximized = true;
+                    OnResize();
+                }
+                else if (wParam == SIZE_RESTORED)
+                {
+                    if (gMinimized)
+                    {
+                        gMinimized = false;
+                        OnResize();
+                    }
+                    else if (gMaximized)
+                    {
+                        gMaximized = false;
+                        OnResize();
+                    }
+                    else if (gResizing)
+                    {
+                        // 사용자가 드래그 중
+                    }
+                    else
+                    {
+                        OnResize();
+                    }
+                }
+                else
+                {
+                    // 사용자가 드래그 중
+
+                }
+            }
+            return 0;
+            break;
+
+        case WM_EXITSIZEMOVE :
+            gResizing = false;
+            OnResize();
+            return 0;
+            break;
+
+        case WM_GETMINMAXINFO :
+            //최대 최소 사이즈 지정
+            reinterpret_cast<MINMAXINFO*>(lParam)->ptMinTrackSize.x = 640;
+            reinterpret_cast<MINMAXINFO*>(lParam)->ptMinTrackSize.y = 480;
+            return 0;
+            break;
+
+        case WM_MENUCHAR :
+            return MAKELRESULT(0, MNC_CLOSE);
+            break;
+
+        case WM_CLOSE :
+            DestroyWindow(hWnd);
+            break;
+
+        case WM_DESTROY :
+            PostQuitMessage(0);
+            break;
+
+        default :
+            return DefWindowProc(hWnd, message, wParam, lParam);
     }
 
     return 0;
@@ -170,6 +255,8 @@ void InitD3D()
 void OnResize()
 {
     //SwapChain 크기 변경
+
+    //안전을 위해서 변경한 것.
     ID3D11RenderTargetView* nullView[] = { nullptr };
     gspDeviceContext->OMSetRenderTargets(_countof(nullView), nullView, nullptr);
 
@@ -179,6 +266,8 @@ void OnResize()
     gspDepthStencil.Reset();
 
     gspDeviceContext->Flush();
+
+    // 실제 사이즈 변경
     gspSwapChain->ResizeBuffers(
         0,
         gScreenWidth,
