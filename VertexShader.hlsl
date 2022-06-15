@@ -1,4 +1,4 @@
-struct VOout
+struct VOut
 {
 	float4 position : SV_POSITION; // SV_POSITON : 시스템에 흘러다니는 위치 정보라는 말
 	float4 color : COLOR;
@@ -6,7 +6,7 @@ struct VOout
 
 VOut main(float4 pos : POSITION, float4 color : COLOR)
 {
-	Vout output;
+	VOut output;
 
 	output.position = pos;
 	output.color = color;

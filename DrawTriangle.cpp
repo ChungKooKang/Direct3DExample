@@ -2,10 +2,20 @@
 
 void DrawTriangle::Initialize(HINSTANCE hInstance, int width, int height)
 {
+	D3DFramwork::Initialize(hInstance, width, height);
+
+	InitPipeline();
+	InitTriangle();
 }
 
 void DrawTriangle::Destroy()
 {
+	mspVertexBuffer.Reset();
+	mspInputLayout.Reset();
+	mspPixelShader.Reset();
+	mspVertexShader.Reset();
+
+	D3DFramwork::Destroy();
 }
 
 void DrawTriangle::InitTriangle()
@@ -97,8 +107,28 @@ void DrawTriangle::InitPipeline()
 	// 조립하기
 	mspDeviceContext->VSSetShader(mspVertexShader.Get(), nullptr, 0);
 	mspDeviceContext->PSSetShader(mspPixelShader.Get(), nullptr, 0);
+
+	//Input Assembler Stage 설정
+	D3D11_INPUT_ELEMENT_DESC ied[]{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+	};
+
+	mspDevice->CreateInputLayout(ied, 2, spVS->GetBufferPointer(), spVS->GetBufferSize(), mspInputLayout.ReleaseAndGetAddressOf());
+
+	mspDeviceContext->IASetInputLayout(mspInputLayout.Get());
 }
 
 void DrawTriangle::Render()
 {
+	UINT offset = 0; // 시작이 얼마나 떨어져 있는가?
+	UINT stride = sizeof(VERTEX); // 하나의 크기가 얼마인가?
+
+	mspDeviceContext->IASetVertexBuffers(0, 1, mspVertexBuffer.GetAddressOf(), &stride, &offset);
+
+	//primitive type 지정하기
+
+	mspDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	mspDeviceContext->Draw(3, 0);
 }
