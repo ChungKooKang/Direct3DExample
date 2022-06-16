@@ -22,14 +22,15 @@ void DrawTriangle::InitTriangle()
 {
 	VERTEX vertices[]
 	{
-		{ 0.0f, 0.5f, 0.0f, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ 0.45f, -0.5f, 0.0f, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ -0.45f, -0.5f, 0.0f, { 0.0f, 0.0f, 1.0f, 1.0f } }
+		{ -0.5f, 0.5f, 0.0f, { 1.0f, 0.0f, 0.0f, 1.0f } },
+		{ 0.5f, 0.5f, 0.0f, { 0.0f, 0.0f, 1.0f, 1.0f } },
+		{ -0.5f, -0.5f, 0.0f, { 0.0f, 1.0f, 0.0f, 1.0f } },
+		{ 0.5f, -0.5f, 0.0f, { 0.0f, 0.0f, 0.0f, 1.0f} }
 	};
 
 	CD3D11_BUFFER_DESC bd(
-		sizeof(VERTEX) * 3,// 우리가 만들려는 배열이 몇 바이트 인가?
-		D3D11_BIND_VERTEX_BUFFER, // bind flag 어디에 사용할 것인지 정보를 알려주는 것
+		sizeof(VERTEX) * 4,// 우리가 만들려는 배열이 몇 바이트 인가?
+		D3D11_BIND_VERTEX_BUFFER,	// bind flag 어디에 사용할 것인지 정보를 알려주는 것
 		D3D11_USAGE_DYNAMIC,		// usage 사용 방법 어떻게 사용할 것인지 ( GPU 읽기, CPU 쓰기 ) => 왜 이렇게 하냐면 CPU와 GPU가 서로 연결이 안 되어 있기 때문에 각 부분에 할 것을 지정해 줘야한다.
 		D3D11_CPU_ACCESS_WRITE		// CPU  Acccess : CPU가 값을 저장할 수 있다.
 	);
@@ -128,7 +129,7 @@ void DrawTriangle::Render()
 
 	//primitive type 지정하기
 
-	mspDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	mspDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-	mspDeviceContext->Draw(3, 0);
+	mspDeviceContext->Draw(4, 0);
 }
