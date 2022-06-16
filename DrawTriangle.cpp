@@ -1,3 +1,5 @@
+#include <vector>
+#include<fstream>
 #include "DrawTriangle.h"
 
 void DrawTriangle::Initialize(HINSTANCE hInstance, int width, int height)
@@ -6,10 +8,14 @@ void DrawTriangle::Initialize(HINSTANCE hInstance, int width, int height)
 
 	InitPipeline();
 	InitTriangle();
+
+	CreateTextureFromBMP();
 }
 
 void DrawTriangle::Destroy()
 {
+	mspTextureView.Reset();
+	mspTexture.Reset();
 	mspVertexBuffer.Reset();
 	mspInputLayout.Reset();
 	mspPixelShader.Reset();
@@ -22,10 +28,10 @@ void DrawTriangle::InitTriangle()
 {
 	VERTEX vertices[]
 	{
-		{ -0.5f, 0.5f, 0.0f, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ 0.5f, 0.5f, 0.0f, { 0.0f, 0.0f, 1.0f, 1.0f } },
-		{ -0.5f, -0.5f, 0.0f, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ 0.5f, -0.5f, 0.0f, { 0.0f, 0.0f, 0.0f, 1.0f} }
+		{ -0.45f, 0.5f, 0.0f, 0.0f, 0.0f },
+		{ 0.45f, 0.5f, 0.0f, 1.0f, 0.0f },
+		{ -0.45f, -0.5f, 0.0f, 0.0f, 1.0f },
+		{ 0.45f, -0.5f, 0.0f, 1.0f, 1.0f }
 	};
 
 	CD3D11_BUFFER_DESC bd(
@@ -112,12 +118,49 @@ void DrawTriangle::InitPipeline()
 	//Input Assembler Stage 설정
 	D3D11_INPUT_ELEMENT_DESC ied[]{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 
 	mspDevice->CreateInputLayout(ied, 2, spVS->GetBufferPointer(), spVS->GetBufferSize(), mspInputLayout.ReleaseAndGetAddressOf());
 
 	mspDeviceContext->IASetInputLayout(mspInputLayout.Get());
+}
+
+HRESULT DrawTriangle::CreateTextureFromBMP()
+{
+	// 1. 파일 열기
+	std::ifstream file;
+	file.open("Data/32.bmp", std::ios::binary);
+
+	BITMAPFILEHEADER bmh;
+	BITMAPINFOHEADER bmi;
+
+	// 2. BITMAPFILEHEADER 읽기
+	file.read(reinterpret_cast<char*>(&bmh), sizeof(BITMAPFILEHEADER));
+	// 3. BITMAPINFOGHEADER 읽기
+	file.read(reinterpret_cast<char*>(&bmi), sizeof(BITMAPINFOHEADER));
+	if (bmh.bfType != 0x4D42)
+	{
+		return E_FAIL;
+	}
+	if (bmi.biBitCount != 32)
+	{
+		return E_FAIL;
+	}
+
+	std::vector<char> pPixels(bmi.biSizeImage);
+	// 4. 픽셀로 건너뛰기
+	file.seekg(bmh.bfOffBits);
+	// 5. 비트맵 읽기
+	int pitch = bmi.biWidth * (bmi.biBitCount / 8);
+	for (int y = bmi.biHeight - 1; y >= 0; --y)
+	{
+		file.read(&pPixels[y * pitch], pitch);
+	}
+
+	file.close();
+
+	return S_OK;
 }
 
 void DrawTriangle::Render()
