@@ -15,5 +15,19 @@ struct PIn
 
 float4 main(PIn input) : SV_TARGET
 {
-	return shaderTexture.Sample(Sampler, input.tex);
+	float4 pix = shaderTexture.Sample(Sampler, input.tex);
+
+	float gray = (pix[0] + pix[1] + pix[2]) / 3;
+	if (gray > 0.5)
+	{
+		gray = 1.0f;
+	}
+	else
+	{
+		gray = 0.0f;
+	}
+
+	pix[0] = pix[1] = pix[2] = gray;
+
+	return pix;
 }
