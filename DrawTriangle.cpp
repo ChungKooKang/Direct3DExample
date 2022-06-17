@@ -14,6 +14,8 @@ void DrawTriangle::Initialize(HINSTANCE hInstance, int width, int height)
 
 void DrawTriangle::Destroy()
 {
+	mspBlendState.Reset();
+	mspSamplerState.Reset();
 	mspTextureView.Reset();
 	mspTexture.Reset();
 	mspVertexBuffer.Reset();
@@ -59,7 +61,35 @@ void DrawTriangle::InitTriangle()
 	memcpy(ms.pData, vertices, sizeof(vertices));
 
 	mspDeviceContext->Unmap(mspVertexBuffer.Get(), 0);
+	float border[4]{ 0.1f, 0.0f, 0.0f, 0.0f };
+	CD3D11_SAMPLER_DESC sd(
+		D3D11_FILTER_MIN_MAG_MIP_POINT,
+		D3D11_TEXTURE_ADDRESS_CLAMP,
+		D3D11_TEXTURE_ADDRESS_CLAMP,
+		D3D11_TEXTURE_ADDRESS_CLAMP,
+		0.0f,
+		1,
+		D3D11_COMPARISON_ALWAYS,
+		border,
+		0,
+		1
+	);
 	
+	mspDevice->CreateSamplerState(&sd, mspSamplerState.ReleaseAndGetAddressOf());
+
+	D3D11_BLEND_DESC blendDesc;
+	ZeroMemory(&blendDesc, sizeof(D3D11_BLEND_DESC));
+	blendDesc.RenderTarget[0].BlendEnable = true;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;		// inverse 는 1 - alpha임.
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	mspDevice->CreateBlendState(&blendDesc, mspBlendState.ReleaseAndGetAddressOf());
 
 }
 
@@ -153,9 +183,35 @@ HRESULT DrawTriangle::CreateTextureFromBMP()
 	file.seekg(bmh.bfOffBits);
 	// 5. 비트맵 읽기
 	int pitch = bmi.biWidth * (bmi.biBitCount / 8);
-	for (int y = bmi.biHeight - 1; y >= 0; --y)
+	int index{};
+	char r{}, g{}, b{}, a{};
+	for (int y { bmi.biHeight -1}; y >= 0; y--)
 	{
-		file.read(&pPixels[y * pitch], pitch);
+		index = y * pitch;
+		for(int x = 0; x < bmi.biWidth; x++)
+		{ 
+			file.read(&b, 1);
+			file.read(&g, 1);
+			file.read(&r, 1);
+			file.read(&a, 1);
+
+			if (static_cast<unsigned char>(r) == 30 && static_cast<unsigned char>(g) == 199 && static_cast<unsigned char>(b) == 250)
+			{
+				pPixels[index] = 0;
+				pPixels[index + 1] = 0;
+				pPixels[index + 2] = 0;
+				pPixels[index + 3] = 0;
+			}
+			else
+			{
+				pPixels[index] = b;
+				pPixels[index + 1] = g;
+				pPixels[index + 2] = r;
+				pPixels[index + 3] = a;
+			}
+
+			index += 4;
+		}
 	}
 
 	file.close();
@@ -196,7 +252,8 @@ void DrawTriangle::Render()
 	//primitive type 지정하기
 
 	mspDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
+	mspDeviceContext->PSSetSamplers(0, 1, mspSamplerState.GetAddressOf());
 	mspDeviceContext->PSSetShaderResources(0, 1, mspTextureView.GetAddressOf());
+	mspDeviceContext->OMSetBlendState(mspBlendState.Get(), nullptr, 0xffffffff );
 	mspDeviceContext->Draw(4, 0);
 }

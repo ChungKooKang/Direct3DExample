@@ -1,10 +1,6 @@
 Texture2D shaderTexture;	// texture를 저장할 수 있는 공간
-SamplerState Sampler		// texture를 입혀줄 때 texture sampling의 규칙 정하기
-{
-	Filter = MIN_MAG_MIP_LINEAR;
-	AddressU = Wrap;
-	AddressV = Wrap;
-};		
+SamplerState Sampler;		// texture를 입혀줄 때 texture sampling의 규칙 정하기
+
 
 
 struct PIn
@@ -16,18 +12,6 @@ struct PIn
 float4 main(PIn input) : SV_TARGET
 {
 	float4 pix = shaderTexture.Sample(Sampler, input.tex);
-
-	float gray = (pix[0] + pix[1] + pix[2]) / 3;
-	if (gray > 0.5)
-	{
-		gray = 1.0f;
-	}
-	else
-	{
-		gray = 0.0f;
-	}
-
-	pix[0] = pix[1] = pix[2] = gray;
 
 	return pix;
 }
