@@ -1,3 +1,7 @@
+// Buffer가 추가됨
+// Constant Buffer 이게 우리가 쓸 것! constant인 이유는 CPU의 data를 바꾸는 것은 아님! 연산만 해 주면 됨!
+
+// Texture Buffer
 struct VOut
 {
 	float4 position : SV_POSITION; // SV_POSITON : 시스템에 흘러다니는 위치 정보라는 말
