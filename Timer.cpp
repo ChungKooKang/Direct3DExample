@@ -70,7 +70,7 @@ namespace MyUtil
 
 		mdDeltaTime = (mllCurrTime - mllPrevTime) * mdSecondsPerCount;
 
-		mllPrevTime - currTime;
+		mllPrevTime = currTime;
 
 		if (mdDeltaTime < 0.0)
 		{
@@ -79,13 +79,20 @@ namespace MyUtil
 	}
 	float Timer::Totaltime() const
 	{
-		return 0.0f;
+		if ( mbStopped )
+		{
+			return static_cast<float>(((mllStopTime - mllPausedTime) - mllBaseTime) * mdSecondsPerCount); // 현재 멈춰있을 때는 멈춘 시간부터 빼 줘야 한다.
+		} else
+		{
+			return static_cast<float>(((mllCurrTime - mllPausedTime) - mllBaseTime) * mdSecondsPerCount);
+		}
 	}
 	float Timer::DeltaTime() const
 	{
-		return 0.0f;
+		return static_cast<float>(mdDeltaTime * mfScale);	// mfScale은 시간 배속을 의미한다.
 	}
 	void Timer::SetScale(float scale)
 	{
+		mfScale = scale;
 	}
 }
