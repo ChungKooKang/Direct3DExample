@@ -7,7 +7,7 @@
 #include <d3d11.h>
 #include <string>
 #include "Timer.h"
-
+#include "Input.h"
 #pragma comment (lib, "d3d11.lib")
 
 class D3DFramwork
@@ -28,6 +28,7 @@ protected :
 	bool mPaused{ false };
 
 	MyUtil::Timer mTimer;
+	MyUtil::Input mInput;
 	std::wstring mTitleText{};
 
 protected :

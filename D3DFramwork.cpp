@@ -228,7 +228,8 @@ void D3DFramwork::Destroy()
 void D3DFramwork::GameLoop()
 {
     MSG msg{};
-    
+
+    mInput.Initialize();
     mTimer.Start();
 
     while (true)
@@ -269,6 +270,33 @@ LRESULT D3DFramwork::MessageHandle(HWND hWnd, UINT message, WPARAM wParam, LPARA
 {
     switch (message)
     {
+    case WM_KEYUP :
+        mInput.SetKeyUp(static_cast<unsigned int>(wParam));
+        break;
+    case WM_KEYDOWN :
+        mInput.SetKeyDown(static_cast<unsigned int>(wParam));
+        break
+            ;
+    case WM_LBUTTONDOWN :
+        mInput.SetKeyDown(VK_LBUTTON);
+        break;
+
+    case WM_LBUTTONUP :
+        mInput.SetKeyUp(VK_LBUTTON);
+        break;
+
+    case WM_RBUTTONDOWN :
+        mInput.SetKeyDown(VK_RBUTTON);
+        break;
+
+    case WM_RBUTTONUP :
+        mInput.SetKeyUp(VK_RBUTTON);
+        break;
+
+    case WM_MOUSEMOVE :
+        mInput.SetCursor(LOWORD(lParam), HIWORD(lParam));
+        break;
+
     case WM_ACTIVATE :
         if (LOWORD(lParam) == WA_INACTIVE)
         {
