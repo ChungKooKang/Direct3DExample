@@ -6,13 +6,14 @@
 #include <wrl/client.h>
 #include <d3d11.h>
 #include <string>
+#include "Timer.h"
 
 #pragma comment (lib, "d3d11.lib")
 
 class D3DFramwork
 {
-	const std::wstring mClassName{ L"MyWindowClass" };
-	const std::wstring mTitle{ L"Direct3D" };
+	const std::wstring CLASSNAME{ L"MyWindowClass" };
+	const std::wstring TITLENAME{ L"Direct3D" };
 
 protected :
 	int mScreenWidth{ 800 };
@@ -24,6 +25,10 @@ protected :
 	bool mMinimized{ false };
 	bool mMaximized{ false };
 	bool mResizing{ false };
+	bool mPaused{ false };
+
+	MyUtil::Timer mTimer;
+	std::wstring mTitleText{};
 
 protected :
 	Microsoft::WRL::ComPtr<ID3D11Device>             mspDevice;
@@ -35,8 +40,8 @@ protected :
 	Microsoft::WRL::ComPtr<ID3D11Texture2D>          mspDepthStencil{};
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView>   mspDepthStencilView{};
 
-
-	
+private :
+	void CalculateFPS();
 
 protected :
 	void InitWindow(HINSTANCE hInstance);
@@ -45,6 +50,8 @@ protected :
 	void RenderFrame();
 
 	virtual void Render() {};
+	virtual void Update(float delta) {};
+
 public :
 	virtual void Initialize(HINSTANCE hInstance, int width = 800, int height = 600);
 	virtual void Destroy();
