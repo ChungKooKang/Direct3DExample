@@ -91,6 +91,17 @@ void DrawTriangle::InitTriangle()
 
 	mspDevice->CreateBlendState(&blendDesc, mspBlendState.ReleaseAndGetAddressOf());
 
+
+	bd = CD3D11_BUFFER_DESC(
+		sizeof(MatrixBuffer),
+		D3D11_BIND_CONSTANT_BUFFER,
+		D3D11_USAGE_DEFAULT
+	);
+	mspDevice->CreateBuffer(&bd, nullptr, mspConstantBuffer.ReleaseAndGetAddressOf());
+	mspDeviceContext->VSSetConstantBuffers(0, 1, mspConstantBuffer.GetAddressOf());
+
+	mX = mY = 0.0f;
+	mRotationZ = 0.0f;
 }
 
 void DrawTriangle::InitPipeline()
@@ -242,6 +253,10 @@ HRESULT DrawTriangle::CreateTextureFromBMP()
 	return S_OK;
 }
 
+void DrawTriangle::Update(float delta)
+{
+}
+
 void DrawTriangle::Render()
 {
 	UINT offset = 0; // 시작이 얼마나 떨어져 있는가?
@@ -255,5 +270,18 @@ void DrawTriangle::Render()
 	mspDeviceContext->PSSetSamplers(0, 1, mspSamplerState.GetAddressOf());
 	mspDeviceContext->PSSetShaderResources(0, 1, mspTextureView.GetAddressOf());
 	mspDeviceContext->OMSetBlendState(mspBlendState.Get(), nullptr, 0xffffffff );
+
+	MatrixBuffer mb;
+	mb.world = DirectX::XMMatrixTranspose(mWorld);
+	mspDeviceContext->UpdateSubresource(
+		mspConstantBuffer.Get(),
+		0,
+		nullptr,
+		&mb,
+		0,
+		0
+	);
+
+
 	mspDeviceContext->Draw(4, 0);
 }
