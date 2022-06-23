@@ -255,6 +255,52 @@ HRESULT DrawTriangle::CreateTextureFromBMP()
 
 void DrawTriangle::Update(float delta)
 {
+	// 회전
+	if (mInput.IsKeyDown('Q'))
+	{
+		mRotationZ += delta * DirectX::XM_PI;
+	}
+	else if (mInput.IsKeyDown('E'))
+	{
+		mRotationZ -= delta * DirectX::XM_PI;
+	}
+
+	// 이동
+	if (mInput.IsKeyDown(VK_LEFT))
+	{
+		mX -= 1.0f * delta;
+	}
+	else if (mInput.IsKeyDown(VK_RIGHT))
+	{
+		mX += 1.0f * delta;
+	}
+
+	if (mInput.IsKeyDown(VK_UP))
+	{
+		mY += 1.0f * delta;
+	}
+	else if (mInput.IsKeyDown(VK_DOWN))
+	{
+		mY -= 1.0f * delta;
+	}
+
+	if (mInput.IsKeyDown('1'))
+	{
+		mTimer.SetScale(1.0f);
+	}
+	else if (mInput.IsKeyDown('2'))
+	{
+		mTimer.SetScale(2.0f);
+	}
+	else if (mInput.IsKeyDown('3'))
+	{
+		mTimer.SetScale(0.5f);
+	}
+
+	mWorld = DirectX::XMMatrixIdentity();
+	mWorld *= DirectX::XMMatrixRotationZ(mRotationZ);
+	mWorld *= DirectX::XMMatrixTranslation(mX, mY, 0.0f);
+
 }
 
 void DrawTriangle::Render()

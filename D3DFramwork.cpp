@@ -298,7 +298,7 @@ LRESULT D3DFramwork::MessageHandle(HWND hWnd, UINT message, WPARAM wParam, LPARA
         break;
 
     case WM_ACTIVATE :
-        if (LOWORD(lParam) == WA_INACTIVE)
+        if (LOWORD(wParam) == WA_INACTIVE)
         {
             mPaused = true;
             mTimer.Stop();
